@@ -1,18 +1,55 @@
-// Game Entities
+// Game Entities with scaling
+
+const TILE_SIZE = 64; // New 2x tile size (originally 32)
+const GRAVITY = 0.8;
+const JUMP_POWER = 16;
+const SPEED = 5;
+const RUN_SPEED = 8;
+
+// Particle class for brick debris
+class Particle {
+    constructor(x, y, velocityX, velocityY) {
+        this.x = x;
+        this.y = y;
+        this.width = 16;
+        this.height = 16;
+        this.velocityX = velocityX;
+        this.velocityY = velocityY;
+        this.gravity = 0.5;
+        this.life = 60; // Frames to live
+    }
+
+    update() {
+        this.velocityY += this.gravity;
+        this.x += this.velocityX;
+        this.y += this.velocityY;
+        this.life--;
+    }
+
+    draw(ctx, cameraX) {
+        if (this.life <= 0) return;
+        const img = assets.getImage('debris');
+        ctx.save();
+        ctx.translate(this.x - cameraX + this.width / 2, this.y + this.height / 2);
+        ctx.rotate(this.life * 0.2);
+        ctx.drawImage(img, -this.width / 2, -this.height / 2, this.width, this.height);
+        ctx.restore();
+    }
+}
 
 // Player class (Pikachu)
 class Player {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.width = 32;
-        this.height = 32;
+        this.width = TILE_SIZE; // 64
+        this.height = TILE_SIZE; // 64
         this.velocityX = 0;
         this.velocityY = 0;
-        this.speed = 3;
-        this.runSpeed = 5;
-        this.jumpPower = 12;
-        this.gravity = 0.5;
+        this.speed = SPEED;
+        this.runSpeed = RUN_SPEED;
+        this.jumpPower = JUMP_POWER;
+        this.gravity = GRAVITY;
         this.onGround = false;
         this.direction = 1; // 1 = right, -1 = left
         this.alive = true;
@@ -21,6 +58,8 @@ class Player {
     }
 
     update(keys, level) {
+        if (!this.alive) return; // Don't move if dead
+
         // Handle input
         let moveSpeed = this.speed;
         if (keys['b'] || keys['B']) {
@@ -47,7 +86,7 @@ class Player {
         this.velocityY += this.gravity;
 
         // Terminal velocity
-        if (this.velocityY > 15) this.velocityY = 15;
+        if (this.velocityY > 20) this.velocityY = 20;
 
         // Update position
         this.x += this.velocityX;
@@ -66,7 +105,7 @@ class Player {
         }
 
         // Fall off world
-        if (this.y > 600) {
+        if (this.y > 800) {
             this.alive = false;
         }
     }
@@ -74,6 +113,8 @@ class Player {
     handleCollisions(level) {
         // Platform collisions
         for (let platform of level.platforms) {
+            if (platform.broken) continue; // Skip broken platforms (empty space)
+
             if (this.intersects(platform)) {
                 // Determine collision direction
                 const overlapLeft = (this.x + this.width) - platform.x;
@@ -93,9 +134,13 @@ class Player {
                     this.y = platform.y + platform.height;
                     this.velocityY = 0;
 
-                    // Break brick blocks
-                    if (platform.type === 'brick' && !platform.hit) {
+                    // Break brick blocks or hit question blocks
+                    if (!platform.hit) {
                         platform.hit = true;
+                        if (platform.type === 'brick') {
+                            // Create debris
+                            level.addDebris(platform.x, platform.y);
+                        }
                         platform.break();
                     }
                 } else if (minOverlap === overlapLeft) {
@@ -160,36 +205,36 @@ class Platform {
 
     break() {
         if (this.type === 'brick') {
-            this.broken = true;
+            this.broken = true; // Mark as broken, so it becomes empty space
         } else if (this.type === 'question' && this.hasCoin) {
             this.hasCoin = false;
-            this.bounceOffset = -10;
+            this.bounceOffset = -15; // Bigger bounce
             return 'coin'; // Return item type
         }
     }
 
     update() {
         if (this.bounceOffset < 0) {
-            this.bounceOffset += 2;
+            this.bounceOffset += 3;
         } else {
             this.bounceOffset = 0;
         }
     }
 
     draw(ctx, cameraX) {
-        if (this.broken) return;
+        if (this.broken) return; // Don't draw broken bricks
 
         let spriteType = this.type;
         if (this.type === 'question' && !this.hasCoin) {
-            spriteType = 'brick'; // Used question block
+            spriteType = 'brick'; // Used question block looks like brick
         }
 
         const img = assets.getImage(spriteType);
         const drawY = this.y + this.bounceOffset;
 
-        for (let x = 0; x < this.width; x += 32) {
-            for (let y = 0; y < this.height; y += 32) {
-                ctx.drawImage(img, this.x + x - cameraX, drawY + y, 32, 32);
+        for (let x = 0; x < this.width; x += TILE_SIZE) {
+            for (let y = 0; y < this.height; y += TILE_SIZE) {
+                ctx.drawImage(img, this.x + x - cameraX, drawY + y, TILE_SIZE, TILE_SIZE);
             }
         }
     }
@@ -200,11 +245,11 @@ class Enemy {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.width = 32;
-        this.height = 32;
-        this.velocityX = -1;
+        this.width = TILE_SIZE;
+        this.height = TILE_SIZE;
+        this.velocityX = -2; // Faster enemies
         this.velocityY = 0;
-        this.gravity = 0.5;
+        this.gravity = GRAVITY;
         this.alive = true;
         this.squashed = false;
     }
@@ -214,20 +259,20 @@ class Enemy {
 
         // Apply gravity
         this.velocityY += this.gravity;
-        if (this.velocityY > 10) this.velocityY = 10;
+        if (this.velocityY > 20) this.velocityY = 20;
 
         // Move
         this.x += this.velocityX;
         this.y += this.velocityY;
 
         // Simple collision with platforms
-        let onGround = false;
         for (let platform of level.platforms) {
+            if (platform.broken) continue;
+
             if (this.intersects(platform)) {
                 if (this.velocityY > 0) {
                     this.y = platform.y - this.height;
                     this.velocityY = 0;
-                    onGround = true;
                 } else if (this.velocityX !== 0) {
                     this.velocityX *= -1; // Turn around when hitting wall
                 }
@@ -235,7 +280,7 @@ class Enemy {
         }
 
         // Fall off world
-        if (this.y > 600) {
+        if (this.y > 800) {
             this.alive = false;
         }
     }
@@ -256,8 +301,8 @@ class Enemy {
         if (!this.alive) return;
 
         const img = assets.getImage('enemy');
-        const height = this.squashed ? 16 : this.height;
-        ctx.drawImage(img, this.x - cameraX, this.y, this.width, height);
+        const height = this.squashed ? TILE_SIZE / 2 : this.height;
+        ctx.drawImage(img, this.x - cameraX, this.y + (this.height - height), this.width, height);
     }
 }
 
@@ -266,8 +311,8 @@ class Coin {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.width = 16;
-        this.height = 16;
+        this.width = 32; // Scaled up
+        this.height = 32;
         this.collected = false;
         this.frame = 0;
     }
@@ -280,7 +325,7 @@ class Coin {
         if (this.collected) return;
 
         const img = assets.getImage('coin');
-        const offsetY = Math.sin(this.frame * 0.1) * 3;
+        const offsetY = Math.sin(this.frame * 0.1) * 5;
         ctx.drawImage(img, this.x - cameraX, this.y + offsetY, this.width, this.height);
     }
 }
@@ -290,8 +335,8 @@ class Goal {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.width = 32;
-        this.height = 128;
+        this.width = TILE_SIZE;
+        this.height = 400; // Taller flag (approx 3/4 screen height)
         this.reached = false;
     }
 

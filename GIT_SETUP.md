@@ -81,11 +81,11 @@ git status
 
 ## 推送到 GitHub
 
-1. 在 GitHub 上創建新儲存庫（例如：`super-pikachu-bros`）
+1. 在 GitHub 上創建新儲存庫（例如：`MarioWeb`）
 
 2. 添加遠端儲存庫：
 ```bash
-git remote add origin https://github.com/gistshu/super-pikachu-bros.git
+git remote add origin https://github.com/gistshu/MarioWeb.git
 ```
 
 3. 推送代碼：

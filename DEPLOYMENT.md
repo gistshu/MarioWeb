@@ -25,7 +25,7 @@ git commit -m "Initial commit: Super Pikachu Bros game"
 
 ```bash
 # 添加遠端儲存庫（替換為您的 GitHub 用戶名）
-git remote add origin https://github.com/YOUR_USERNAME/super-pikachu-bros.git
+git remote add origin https://github.com/gistshu/super-pikachu-bros.git
 
 # 推送代碼
 git branch -M main

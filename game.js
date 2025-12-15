@@ -1,4 +1,4 @@
-// Main Game Engine
+// Main Game Engine with Lives System
 
 // Game states
 const GameState = {
@@ -20,6 +20,7 @@ class Game {
         this.coins = 0;
         this.time = 400;
         this.cameraX = 0;
+        this.lives = 3; // Start with 3 lives
 
         // Menu elements
         this.menuScreen = document.getElementById('menuScreen');
@@ -45,6 +46,8 @@ class Game {
     setupCanvas() {
         this.canvas.width = 800;
         this.canvas.height = 600;
+        // Ensure accurate pixel art rendering
+        this.ctx.imageSmoothingEnabled = false;
     }
 
     setupEventListeners() {
@@ -97,17 +100,11 @@ class Game {
     }
 
     handleResize() {
-        const container = this.canvas.parentElement;
-        const containerWidth = container.clientWidth;
-        const containerHeight = container.clientHeight;
-
-        const scale = Math.min(
-            containerWidth / this.canvas.width,
-            containerHeight / this.canvas.height
-        );
-
-        this.canvas.style.width = `${this.canvas.width * scale}px`;
-        this.canvas.style.height = `${this.canvas.height * scale}px`;
+        // Keep canvas fixed size but scale via CSS if needed, handled by flex container now
+        // This function ensures canvas render size matches internal resolution
+        this.canvas.width = 800;
+        this.canvas.height = 600;
+        this.ctx.imageSmoothingEnabled = false;
     }
 
     addMenuCoin() {
@@ -115,7 +112,6 @@ class Game {
         this.coinCountDisplay.textContent = this.menuCoins;
         this.startButton.disabled = false;
 
-        // Animation effect
         this.coinCountDisplay.style.transform = 'scale(1.3)';
         setTimeout(() => {
             this.coinCountDisplay.style.transform = 'scale(1)';
@@ -138,18 +134,25 @@ class Game {
         // Use a coin
         this.menuCoins--;
 
-        // Initialize game
+        // Initialize game stats
         this.score = 0;
         this.coins = 0;
         this.time = 400;
-        this.cameraX = 0;
-        this.player = new Player(100, 400);
-        this.level = new Level();
-        this.keys = {};
+        this.lives = 3; // Reset lives
+
+        this.resetLevel();
 
         // Start game loop
         this.lastTime = performance.now();
         this.gameLoop();
+    }
+
+    resetLevel() {
+        this.cameraX = 0;
+        this.level = new Level();
+        this.player = new Player(100, 300); // Start position above ground
+        this.keys = {};
+        this.updateUI();
     }
 
     returnToMenu() {
@@ -173,11 +176,11 @@ class Game {
     }
 
     update(deltaTime) {
-        // Update timer (roughly every second)
+        // Update timer
         if (Math.random() < 0.016) {
             this.time--;
             if (this.time <= 0) {
-                this.gameOver();
+                this.playerDie();
                 return;
             }
         }
@@ -188,9 +191,12 @@ class Game {
         // Update level
         this.level.update();
 
-        // Camera follows player
+        // Camera follows player (with buffer)
+        const targetCamX = this.player.x - this.canvas.width / 3;
+        // Smooth camera movement
+        this.cameraX += (targetCamX - this.cameraX) * 0.1;
         this.cameraX = Math.max(0, Math.min(
-            this.player.x - this.canvas.width / 3,
+            this.cameraX,
             this.level.width - this.canvas.width
         ));
 
@@ -199,16 +205,17 @@ class Game {
             if (!enemy.alive) continue;
 
             if (this.player.intersects(enemy)) {
-                // Check if player is falling on enemy
                 if (this.player.velocityY > 0 &&
-                    this.player.y + this.player.height - 10 < enemy.y + enemy.height / 2) {
+                    this.player.y + this.player.height - 20 < enemy.y + enemy.height / 2) {
                     // Squash enemy
                     enemy.squash();
-                    this.player.velocityY = -8; // Bounce
+                    this.player.velocityY = -10; // Bounce
                     this.score += 100;
                 } else {
                     // Player takes damage
-                    this.player.takeDamage();
+                    if (!this.player.invincible) {
+                        this.playerDie();
+                    }
                 }
             }
         }
@@ -230,13 +237,24 @@ class Game {
             this.win();
         }
 
-        // Check if player died
+        // Check if player died (fallen)
         if (!this.player.alive) {
-            this.gameOver();
+            this.playerDie();
         }
 
         // Update UI
         this.updateUI();
+    }
+
+    playerDie() {
+        this.lives--;
+        if (this.lives > 0) {
+            // Respawn logic
+            // Ideally should fade out/in, but for now just reset level state
+            this.resetLevel();
+        } else {
+            this.gameOver();
+        }
     }
 
     updateUI() {
@@ -244,6 +262,11 @@ class Game {
             this.score.toString().padStart(6, '0');
         document.getElementById('timeDisplay').textContent =
             this.time.toString();
+        // We could also display lives in UI if there's a slot, 
+        // but currently we just rely on resetting.
+        // Let's add a visual cue for lives in the "ui-left" potentially
+        const nameDisplay = document.querySelector('.ui-left span:first-child');
+        nameDisplay.textContent = `PIKACHU x${this.lives}`;
     }
 
     draw() {
@@ -270,6 +293,7 @@ class Game {
     gameOver() {
         this.state = GameState.GAME_OVER;
         this.gameOverScreen.classList.add('active');
+        this.player.alive = false;
     }
 
     win() {
@@ -285,12 +309,12 @@ let game;
 window.addEventListener('load', () => {
     console.log('Initializing game...');
 
-    // Wait for assets to load
+    // Wait for scaling assets to load
     const checkAssets = setInterval(() => {
         if (assets.isLoaded()) {
             clearInterval(checkAssets);
             game = new Game();
-            console.log('Game initialized!');
+            console.log('Game initialized with refinements!');
         }
     }, 100);
 });

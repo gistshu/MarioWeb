@@ -38,65 +38,61 @@ class AssetManager {
     }
 }
 
-// Create sprite sheet from colors (for simple graphics)
-function createColorSprite(width, height, color) {
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = color;
-    ctx.fillRect(0, 0, width, height);
-    return canvas;
-}
+// Global scaling factor
+const SCALE = 2; // Making everything 2x bigger (64px tiles)
 
 // Create Pikachu sprite (simple pixel art)
 function createPikachuSprite() {
     const canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 32;
+    canvas.width = 32 * SCALE;
+    canvas.height = 32 * SCALE;
     const ctx = canvas.getContext('2d');
-    
+    ctx.imageSmoothingEnabled = false;
+    ctx.scale(SCALE, SCALE);
+
     // Yellow body
     ctx.fillStyle = '#FFD700';
     ctx.fillRect(8, 12, 16, 16);
-    
+
     // Ears
-    ctx.fillRect(6, 8, 4, 8);
-    ctx.fillRect(22, 8, 4, 8);
+    ctx.fillRect(6, 4, 4, 12); // Longer ears
+    ctx.fillRect(22, 4, 4, 12);
     ctx.fillStyle = '#000';
-    ctx.fillRect(6, 8, 4, 2);
-    ctx.fillRect(22, 8, 4, 2);
-    
+    ctx.fillRect(6, 4, 4, 3);
+    ctx.fillRect(22, 4, 4, 3);
+
     // Eyes
     ctx.fillStyle = '#000';
     ctx.fillRect(12, 16, 2, 2);
     ctx.fillRect(18, 16, 2, 2);
-    
-    // Cheeks
+
+    // Cheeks - Bigger cheeks
     ctx.fillStyle = '#FF6B6B';
-    ctx.fillRect(8, 20, 3, 3);
-    ctx.fillRect(21, 20, 3, 3);
-    
+    ctx.fillRect(7, 19, 4, 4);
+    ctx.fillRect(21, 19, 4, 4);
+
     // Mouth
     ctx.fillStyle = '#000';
     ctx.fillRect(14, 22, 4, 1);
-    
+
     // Tail
     ctx.fillStyle = '#FFD700';
     ctx.fillRect(24, 16, 6, 4);
     ctx.fillStyle = '#8B4513';
     ctx.fillRect(26, 16, 4, 2);
-    
+
     return canvas;
 }
 
 // Create block sprite
 function createBlockSprite(type) {
     const canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 32;
+    canvas.width = 32 * SCALE;
+    canvas.height = 32 * SCALE;
     const ctx = canvas.getContext('2d');
-    
+    ctx.imageSmoothingEnabled = false;
+    ctx.scale(SCALE, SCALE);
+
     if (type === 'brick') {
         // Brick block
         ctx.fillStyle = '#C84C09';
@@ -148,77 +144,93 @@ function createBlockSprite(type) {
         // Pipe highlight
         ctx.fillStyle = '#00E000';
         ctx.fillRect(6, 6, 8, 20);
+    } else if (type === 'debris') {
+        // Brick debris
+        ctx.fillStyle = '#C84C09';
+        ctx.fillRect(0, 0, 8, 8);
     }
-    
+
     return canvas;
 }
 
 // Create enemy sprite (Goomba-style)
 function createEnemySprite() {
     const canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 32;
+    canvas.width = 32 * SCALE;
+    canvas.height = 32 * SCALE;
     const ctx = canvas.getContext('2d');
-    
+    ctx.imageSmoothingEnabled = false;
+    ctx.scale(SCALE, SCALE);
+
     // Brown mushroom body
     ctx.fillStyle = '#8B4513';
-    ctx.fillRect(8, 16, 16, 12);
-    
+    ctx.fillRect(4, 12, 24, 16); // Wider body
+
     // Head/cap
     ctx.fillStyle = '#A0522D';
-    ctx.fillRect(6, 10, 20, 8);
-    
+    ctx.fillRect(2, 8, 28, 10);
+
     // Eyes
     ctx.fillStyle = '#FFF';
-    ctx.fillRect(10, 12, 4, 4);
-    ctx.fillRect(18, 12, 4, 4);
+    ctx.fillRect(8, 14, 6, 6);
+    ctx.fillRect(18, 14, 6, 6);
     ctx.fillStyle = '#000';
-    ctx.fillRect(11, 13, 2, 2);
-    ctx.fillRect(19, 13, 2, 2);
-    
+    ctx.fillRect(10, 16, 2, 2);
+    ctx.fillRect(20, 16, 2, 2);
+
     // Feet
     ctx.fillStyle = '#654321';
-    ctx.fillRect(8, 28, 6, 4);
-    ctx.fillRect(18, 28, 6, 4);
-    
+    ctx.fillRect(6, 28, 8, 4);
+    ctx.fillRect(18, 28, 8, 4);
+
     return canvas;
 }
 
 // Create coin sprite
 function createCoinSprite() {
     const canvas = document.createElement('canvas');
-    canvas.width = 16;
-    canvas.height = 16;
+    canvas.width = 16 * SCALE; // Smaller than blocks, but scaled
+    canvas.height = 16 * SCALE;
     const ctx = canvas.getContext('2d');
-    
+    ctx.imageSmoothingEnabled = false;
+    ctx.scale(SCALE, SCALE);
+
     ctx.fillStyle = '#FFD700';
     ctx.beginPath();
-    ctx.arc(8, 8, 6, 0, Math.PI * 2);
+    ctx.arc(8, 8, 7, 0, Math.PI * 2);
     ctx.fill();
-    
+
     ctx.fillStyle = '#FFA500';
     ctx.beginPath();
-    ctx.arc(8, 8, 4, 0, Math.PI * 2);
+    ctx.arc(8, 8, 5, 0, Math.PI * 2);
     ctx.fill();
-    
+
     return canvas;
 }
 
 // Create flag sprite
 function createFlagSprite() {
     const canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 128;
+    canvas.width = 32 * SCALE;
+    canvas.height = 400; // Much taller flag pole
     const ctx = canvas.getContext('2d');
-    
+    ctx.imageSmoothingEnabled = false;
+
     // Pole
     ctx.fillStyle = '#8B8B8B';
-    ctx.fillRect(14, 0, 4, 128);
-    
+    ctx.fillRect(14 * SCALE, 0, 4 * SCALE, 400);
+
     // Flag
     ctx.fillStyle = '#000';
-    ctx.fillRect(18, 8, 12, 12);
-    
+    ctx.fillRect(18 * SCALE, 20, 12 * SCALE * 2, 12 * SCALE * 2);
+    ctx.fillStyle = '#FF0000'; // Red flag
+    // Triangle flag
+    ctx.beginPath();
+    ctx.moveTo(18 * SCALE, 20);
+    ctx.lineTo(18 * SCALE + 60, 45);
+    ctx.lineTo(18 * SCALE, 70);
+    ctx.fill();
+
     return canvas;
 }
 
@@ -231,12 +243,13 @@ assets.images['brick'] = createBlockSprite('brick');
 assets.images['question'] = createBlockSprite('question');
 assets.images['ground'] = createBlockSprite('ground');
 assets.images['pipe'] = createBlockSprite('pipe');
+assets.images['debris'] = createBlockSprite('debris'); // New debris
 assets.images['enemy'] = createEnemySprite();
 assets.images['coin'] = createCoinSprite();
 assets.images['flag'] = createFlagSprite();
 
-// Mark as loaded (since we're creating sprites, not loading images)
-assets.loaded = 8;
-assets.total = 8;
+// Mark as loaded
+assets.loaded = 9;
+assets.total = 9;
 
-console.log('Assets initialized!');
+console.log('Assets initialized with 2x Scale!');
