@@ -2,7 +2,7 @@
 
 一個以超級瑪莉為靈感的復古風網頁遊戲，使用皮卡丘作為主角。完整實現了經典的 1-1 關卡，包含投幣機制、平台跳躍、敵人互動和道具收集。
 
-![Game Screenshot](https://via.placeholder.com/800x400/5c94fc/ffffff?text=Super+Pikachu+Bros)
+[Demo URL](https://gistshu.github.io/MarioWeb/)
 
 ## 🌟 特色功能
 
